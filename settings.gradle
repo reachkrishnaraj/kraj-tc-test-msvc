@@ -1,0 +1,2 @@
+rootProject.name = 'test-service-name'
+include 'test-service-name-common', 'test-service-name-client', 'test-service-name-msvc'

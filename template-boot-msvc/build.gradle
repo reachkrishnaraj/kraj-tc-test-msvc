@@ -1,0 +1,59 @@
+buildscript {
+    ext {
+    }
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.springframework.boot:spring-boot-gradle-plugin:$springBootVersion"
+        classpath 'se.transmode.gradle:gradle-docker:1.2'
+    }
+}
+
+apply plugin: 'docker'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
+
+
+dependencies {
+    compile project(':test-service-name-common')
+
+    compile('com.turo:turo-boot-starter-web:2.+')
+    // For boot applications that need a relational database:
+    //   1. uncomment the `com.turo:turo-boot-jpa dependency"
+    // compile('com.turo:turo-boot-jpa:2.+')
+
+    // using swagger because this is a simple service
+    compile 'io.springfox:springfox-swagger2:2.9.+'
+    compile 'io.springfox:springfox-swagger-ui:2.9.+'
+
+
+    testCompile('org.springframework.boot:spring-boot-starter-test') {
+        exclude group: 'junit', module: 'junit'
+    }
+}
+
+task buildDocker(type: Docker) {
+    baseImage 'turo/java-app'
+    // For boot applications that need a relational database:
+    //   1. replace the base image with `turo/java-app:flyway`
+    //      baseImage 'turo/java-app:flyway'
+    //   2. uncomment that `addFile` directive below to include the migrations in your docker image
+    //   3. uncomment the `flyway` code below to let gradle know about flyway's migrations
+
+    push = project.hasProperty 'push'
+    tag = "turo/${project.name}"
+    setEnvironment('SPRING_PROFILES_ACTIVE', 'docker,log-json,debug')
+
+    //addFile("src/main/resources/db/migration", "/flyway/migrations")
+    addFile {
+        from jar
+        rename { 'app.jar' }
+    }
+}
+
+buildDocker.dependsOn bootJar, assemble
+
+// flyway {
+//     locations = ['filesystem:test-service-name-msvc/src/main/resources/db/migration']
+// }

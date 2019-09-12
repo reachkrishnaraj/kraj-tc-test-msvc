@@ -1,0 +1,113 @@
+buildscript {
+    ext {
+        kotlinVersion = '1.3.50'
+        junitVersion = '5.5.2'
+        springBootVersion = '2.1.8.RELEASE'
+    }
+    repositories {
+        mavenCentral()
+        jcenter()
+        maven { url 'https://plugins.gradle.org/m2/' }
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
+        classpath "org.jetbrains.kotlin:kotlin-allopen:$kotlinVersion"
+        classpath "org.jetbrains.kotlin:kotlin-noarg:$kotlinVersion"
+        classpath 'com.github.ben-manes:gradle-versions-plugin:0.25.0'
+        classpath 'gradle.plugin.org.jlleitschuh.gradle:ktlint-gradle:6.2.1'
+    }
+}
+
+apply plugin: 'idea'
+apply plugin: 'maven'
+
+subprojects {
+    group 'com.turo'
+
+    apply plugin: 'org.jlleitschuh.gradle.ktlint'
+    apply plugin: 'org.jlleitschuh.gradle.ktlint-idea'
+    apply plugin: 'kotlin'
+    //  Uncomment if using jpa to enable automatic default constructor handling of @Entity classes
+    //    apply plugin: 'kotlin-jpa'
+    apply plugin: 'kotlin-spring'
+    apply plugin: 'idea'
+    apply plugin: 'maven'
+    apply plugin: 'com.github.ben-manes.versions' // Provides task "dependencyUpdates" which checks to see if newer libraries are available
+
+    repositories {
+        mavenCentral()
+        jcenter()
+        maven { url 'https://repo.spring.io/snapshot' }
+        maven { url 'https://repo.spring.io/milestone' }
+        maven {
+            url 'https://turo.jfrog.io/turo/libs-release-local'
+            credentials {
+                username artifactoryUsername
+                password artifactoryAuthToken
+            }
+        }
+    }
+
+    sourceCompatibility = 1.8
+
+    compileKotlin {
+        kotlinOptions {
+            freeCompilerArgs = ['-Xjsr305=strict']
+            jvmTarget = '1.8'
+        }
+    }
+    compileTestKotlin {
+        kotlinOptions {
+            freeCompilerArgs = ['-Xjsr305=strict']
+            jvmTarget = '1.8'
+        }
+    }
+
+    dependencies {
+        compile "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion"
+        compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
+
+        testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
+        testCompile "org.junit.jupiter:junit-jupiter-params:$junitVersion"
+        testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
+    }
+
+    // Send version to teamcity if requested
+    task setVersionInfo {
+        def apiVersion = '1.0'
+        if (project.hasProperty('buildNumber') && project.hasProperty('branch') && project.hasProperty('isDefault')) {
+            def branchString = (isDefault == "true" ? "" : "-" + branch.replaceAll(/[^\w\d]+/, "_"))
+            version = "${apiVersion}.${buildNumber}${branchString}"
+        } else {
+            version = "${apiVersion}.0-dev"
+        }
+        ext.version = version
+
+        println "Version [${version}]"
+
+        println "##teamcity[setParameter name='${project.name}_version' value='${version}']"
+        ext.version = version
+    }
+
+    test {
+        // Enable JUnit 5 (Gradle 4.6+).
+        useJUnitPlatform()
+
+        // Always run tests, even when nothing changed.
+        dependsOn 'cleanTest'
+
+        // Show test results.
+        testLogging {
+            events 'passed', 'skipped', 'failed'
+        }
+    }
+
+    task sourcesJar(type: Jar) {
+        from sourceSets.main.allSource
+        classifier = 'sources'
+    }
+
+    artifacts {
+        archives sourcesJar
+    }
+}

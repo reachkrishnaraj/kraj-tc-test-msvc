@@ -1,0 +1,15 @@
+dependencies {
+    compile project(':test-service-name-common')
+
+    compile 'com.squareup.retrofit2:retrofit:2.6.1'
+    compile 'com.squareup.retrofit2:converter-jackson:2.6.1'
+
+    compile 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.9.9'
+    compile 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.8.10'
+    compile 'com.fasterxml.jackson.module:jackson-module-kotlin:2.9.4.1'
+
+    // Users of VehicleTelematicsClient may provide an Crnk-approved HTTP client. We use okhttp for our tests.
+    // testCompile 'com.squareup.okhttp3:okhttp:3.11.0'
+    // Any JavaX EL library is required for Hibernate validator. Typically provided for clients by their web server.
+    // testCompile 'org.apache.tomcat:tomcat-jasper-el:8.5.14'
+}
